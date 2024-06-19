@@ -24,7 +24,7 @@ class Game:
         self.cpu = CPU(self.board, self.board_size)
         self.last_move = None
         self.cpu_thinking = False
-        self.vs_cpu_mode = False  # モードのフラグを追加
+        self.vs_cpu_mode = False
         self.observe_counts = {"black": OBSERVE_LIMIT, "white": OBSERVE_LIMIT}
         self.observe_mode = False
         self.observer = None
@@ -32,8 +32,8 @@ class Game:
     def set_player(self, player_side, vs_cpu):
         self.player_side = player_side
         self.cpu_side = "gote" if player_side == "sente" else "sente"
-        self.vs_cpu_mode = vs_cpu  # モードを設定
-        pygame.display.set_mode((self.window_size + self.log_width, self.screen_height))  # ゲーム画面に遷移する際にログ用スペースを確保
+        self.vs_cpu_mode = vs_cpu
+        pygame.display.set_mode((self.window_size + self.log_width, self.screen_height))
 
     def handle_mouse_click(self, x, y):
         if self.window_size // 2 - 75 <= x <= self.window_size // 2 + 75 and self.screen_height - 70 <= y <= self.screen_height - 30:
@@ -53,7 +53,6 @@ class Game:
                 pygame.time.wait(1000)
         elif not self.observed and self.winner is None and (not self.vs_cpu_mode or self.current_player == ("black" if self.player_side == "sente" else "white")):
             grid_x, grid_y = x // self.cell_size, y // self.cell_size
-            print(f"Placing stone at grid ({grid_x}, {grid_y})")  # デバッグ用
             if 0 <= grid_x < self.board_size and 0 <= grid_y < self.board_size and self.board[grid_x][grid_y] is None:
                 self.place_stone(grid_x, grid_y)
                 if self.observe_mode:
@@ -61,7 +60,6 @@ class Game:
                     self.observe_counts[self.observer] -= 1
                     self.observe_mode = False
                     self.show_observing_message()
-                    self.observed = True
                 else:
                     if self.vs_cpu_mode:
                         self.cpu_thinking = True
@@ -85,7 +83,6 @@ class Game:
             probability = 0.7
         elif remainder == 0:
             probability = 0.3
-        print(f"Stone placed with probability {probability}")  # デバッグ用
         self.board[grid_x][grid_y] = Stone(grid_x, grid_y, probability, self.current_player)
         self.last_move = (grid_x, grid_y)
         self.log.append(f"{self.current_player.capitalize()} {self.turn_count}: ({grid_x + 1},{grid_y + 1})")
@@ -152,6 +149,7 @@ class Game:
         self.observer = None
 
     def show_observing_message(self):
+        self.update_screen()
         draw_thinking_message(self.screen, self.window_size, self.screen_height, "Observing...")
         pygame.display.flip()
         pygame.time.wait(1000)
@@ -159,7 +157,7 @@ class Game:
         self.winner = self.check_winner()
         self.observed = True
 
-    def update(self, cpu_mode=False):
+    def update_screen(self):
         draw_board(self.screen, self.window_size, self.cell_size, self.board_size, self.last_move)
         for x in range(self.board_size):
             for y in range(self.board_size):
@@ -170,8 +168,11 @@ class Game:
             display_winner(self.screen, self.winner, self.window_size)
         draw_log(self.screen, self.log, self.scroll_pos, self.window_size, self.log_width, self.board_size, self.cell_size)
 
+    def update(self, cpu_mode=False):
+        self.update_screen()
         if cpu_mode and self.current_player == ("black" if self.cpu_side == "sente" else "white") and not self.observed and self.winner is None:
             if self.cpu_thinking:
+                self.update_screen()
                 draw_thinking_message(self.screen, self.window_size, self.screen_height, "CPU is thinking...")
                 pygame.display.flip()
                 pygame.time.wait(1000)
