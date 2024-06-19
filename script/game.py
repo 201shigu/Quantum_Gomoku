@@ -1,7 +1,8 @@
 import pygame
 import random
 from classes import Stone, CPU
-from draw_utils import draw_board, draw_buttons, display_winner, draw_log, draw_thinking_message, BLACK, WHITE
+from draw_utils import draw_board, draw_buttons, display_winner, draw_log, draw_thinking_message
+from settings import BLACK, WHITE, LIGHT_GRAY, OBSERVE_LIMIT
 
 class Game:
     def __init__(self, screen, window_size, screen_height, log_width, board_size, cell_size):
@@ -24,7 +25,7 @@ class Game:
         self.last_move = None
         self.cpu_thinking = False
         self.vs_cpu_mode = False  # モードのフラグを追加
-        self.observe_counts = {"black": 5, "white": 5}
+        self.observe_counts = {"black": OBSERVE_LIMIT, "white": OBSERVE_LIMIT}
         self.observe_mode = False
         self.observer = None
 
@@ -46,6 +47,10 @@ class Game:
             elif self.observe_counts[self.current_player] > 0:
                 self.observe_mode = True
                 self.observer = self.current_player
+            else:
+                draw_thinking_message(self.screen, self.window_size, self.screen_height, "Can't Observe")
+                pygame.display.flip()
+                pygame.time.wait(1000)
         elif not self.observed and self.winner is None and (not self.vs_cpu_mode or self.current_player == ("black" if self.player_side == "sente" else "white")):
             grid_x, grid_y = x // self.cell_size, y // self.cell_size
             print(f"Placing stone at grid ({grid_x}, {grid_y})")  # デバッグ用
@@ -60,6 +65,11 @@ class Game:
                 else:
                     if self.vs_cpu_mode:
                         self.cpu_thinking = True
+        self.check_draw()
+
+    def check_draw(self):
+        if self.observe_counts["black"] == 0 and self.observe_counts["white"] == 0 and self.winner is None:
+            self.winner = "Draw"
 
     def handle_scroll(self, scroll_amount):
         self.scroll_pos = max(0, min(self.scroll_pos - scroll_amount, len(self.log) - 1))
@@ -137,7 +147,7 @@ class Game:
         self.log = []
         self.last_move = None
         self.cpu_thinking = False
-        self.observe_counts = {"black": 5, "white": 5}
+        self.observe_counts = {"black": OBSERVE_LIMIT, "white": OBSERVE_LIMIT}
         self.observe_mode = False
         self.observer = None
 

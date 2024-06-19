@@ -1,19 +1,9 @@
 import pygame
 import random
-
-# 色定義
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-LIGHT_BLACK = (32, 32, 32)
-DARK_GRAY = (64, 64, 64)
-VERY_LIGHT_GRAY = (224, 224, 224)
-LIGHT_GRAY = (192, 192, 192)
-GREEN = (34, 139, 34)
-GRID_COLOR = WHITE
-ORANGE = (255, 165, 0)
+from settings import BLACK, WHITE, LIGHT_BLACK, DARK_GRAY, VERY_LIGHT_GRAY, LIGHT_GRAY, GREEN, GRID_COLOR, ORANGE, OBSERVE_LIMIT
 
 # フォント初期化を追加
-pygame.font.init()  # この行を追加
+pygame.font.init()
 
 font = pygame.font.Font(None, 24)
 small_font = pygame.font.Font(None, 24)
@@ -47,26 +37,37 @@ def get_color_and_text(player, probability):
             return LIGHT_GRAY, BLACK
 
 def draw_buttons(screen, window_size, screen_height, observed, winner, observe_counts, observe_mode):
-    pygame.draw.rect(screen, WHITE, (window_size // 2 - 75, screen_height - 70, 150, 40))
+    button_color = WHITE
     if winner is not None:
         button_text = "Reset"
     elif observed:
         button_text = "Continue"
     elif observe_mode:
         button_text = "Cancel Observing"
+    elif observe_counts["black"] == 0 and observe_counts["white"] == 0:
+        button_text = "Draw"
+        button_color = LIGHT_GRAY
+    elif observe_counts["black"] == 0 and observe_counts["white"] == 0:
+        button_text = "Draw"
+        button_color = LIGHT_GRAY
     else:
         button_text = "Observe"
+        if observe_counts["black"] == 0 and observe_counts["white"] == 0:
+            button_text = "Can't Observe"
+            button_color = LIGHT_GRAY
+    
+    pygame.draw.rect(screen, button_color, (window_size // 2 - 75, screen_height - 70, 150, 40))
     text_surface = font.render(button_text, True, BLACK)
     text_rect = text_surface.get_rect(center=(window_size // 2, screen_height - 50))
     screen.blit(text_surface, text_rect)
 
-    observe_text = f"Sente:{observe_counts['black']}/5 Gote:{observe_counts['white']}/5"
+    observe_text = f"Sente:{observe_counts['black']}/{OBSERVE_LIMIT} Gote:{observe_counts['white']}/{OBSERVE_LIMIT}"  # 修正
     observe_surface = small_font.render(observe_text, True, BLACK)
     observe_rect = observe_surface.get_rect(center=(window_size // 2, screen_height - 20))
     screen.blit(observe_surface, observe_rect)
 
 def display_winner(screen, winner, window_size):
-    winner_text = f"{winner} wins!"
+    winner_text = f"{winner} wins!" if winner != "Draw" else "Draw"
     text_surface = large_font.render(winner_text, True, BLACK)
     text_rect = text_surface.get_rect(center=(window_size // 2, window_size // 2))
     screen.blit(text_surface, text_rect)
