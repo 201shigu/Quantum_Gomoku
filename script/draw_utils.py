@@ -46,12 +46,24 @@ def get_color_and_text(player, probability):
         elif probability == 0.3:
             return LIGHT_GRAY, BLACK
 
-def draw_buttons(screen, window_size, screen_height, observed, winner):
-    pygame.draw.rect(screen, WHITE, (window_size // 2 - 50, screen_height - 70, 100, 40))
-    button_text = "Observe" if not observed else ("Continue" if winner is None else "Reset")
+def draw_buttons(screen, window_size, screen_height, observed, winner, observe_counts, observe_mode):
+    pygame.draw.rect(screen, WHITE, (window_size // 2 - 75, screen_height - 70, 150, 40))
+    if winner is not None:
+        button_text = "Reset"
+    elif observed:
+        button_text = "Continue"
+    elif observe_mode:
+        button_text = "Cancel Observing"
+    else:
+        button_text = "Observe"
     text_surface = font.render(button_text, True, BLACK)
     text_rect = text_surface.get_rect(center=(window_size // 2, screen_height - 50))
     screen.blit(text_surface, text_rect)
+
+    observe_text = f"Sente:{observe_counts['black']}/5 Gote:{observe_counts['white']}/5"
+    observe_surface = small_font.render(observe_text, True, BLACK)
+    observe_rect = observe_surface.get_rect(center=(window_size // 2, screen_height - 20))
+    screen.blit(observe_surface, observe_rect)
 
 def display_winner(screen, winner, window_size):
     winner_text = f"{winner} wins!"
@@ -123,8 +135,7 @@ def draw_stone(screen, color, x, y, cell_size, text_color, probability):
     text_rect = text_surface.get_rect(center=(x * cell_size + cell_size // 2, y * cell_size + cell_size // 2))
     screen.blit(text_surface, text_rect)
 
-def draw_thinking_message(screen, window_size, screen_height):
-    message = "CPU is thinking..."
+def draw_thinking_message(screen, window_size, screen_height, message):
     text_surface = small_font.render(message, True, BLACK)
     text_rect = text_surface.get_rect(bottomright=(window_size - 10, screen_height - 10))
     screen.blit(text_surface, text_rect)

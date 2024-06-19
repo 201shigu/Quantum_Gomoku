@@ -1,7 +1,7 @@
 import pygame
 import random
 from classes import Stone, CPU
-from draw_utils import draw_board, draw_buttons, display_winner, draw_log, draw_thinking_message
+from draw_utils import draw_board, draw_buttons, display_winner, draw_log, draw_thinking_message, BLACK, WHITE
 
 class Game:
     def __init__(self, screen, window_size, screen_height, log_width, board_size, cell_size):
@@ -24,6 +24,9 @@ class Game:
         self.last_move = None
         self.cpu_thinking = False
         self.vs_cpu_mode = False  # モードのフラグを追加
+        self.observe_counts = {"black": 5, "white": 5}
+        self.observe_mode = False
+        self.observer = None
 
     def set_player(self, player_side, vs_cpu):
         self.player_side = player_side
@@ -32,23 +35,31 @@ class Game:
         pygame.display.set_mode((self.window_size + self.log_width, self.screen_height))  # ゲーム画面に遷移する際にログ用スペースを確保
 
     def handle_mouse_click(self, x, y):
-        if self.window_size // 2 - 50 <= x <= self.window_size // 2 + 50 and self.screen_height - 70 <= y <= self.screen_height - 30:
+        if self.window_size // 2 - 75 <= x <= self.window_size // 2 + 75 and self.screen_height - 70 <= y <= self.screen_height - 30:
             if self.winner is not None:
                 self.reset_game()
+            elif self.observe_mode:
+                self.observe_mode = False
             elif self.observed:
                 self.reset_observations()
                 self.observed = False
-            else:
-                self.observe_board()
-                self.winner = self.check_winner()
-                self.observed = True
+            elif self.observe_counts[self.current_player] > 0:
+                self.observe_mode = True
+                self.observer = self.current_player
         elif not self.observed and self.winner is None and (not self.vs_cpu_mode or self.current_player == ("black" if self.player_side == "sente" else "white")):
             grid_x, grid_y = x // self.cell_size, y // self.cell_size
             print(f"Placing stone at grid ({grid_x}, {grid_y})")  # デバッグ用
             if 0 <= grid_x < self.board_size and 0 <= grid_y < self.board_size and self.board[grid_x][grid_y] is None:
                 self.place_stone(grid_x, grid_y)
-                if self.vs_cpu_mode:
-                    self.cpu_thinking = True
+                if self.observe_mode:
+                    self.log.append(f"{self.observer.capitalize()}: Observe")
+                    self.observe_counts[self.observer] -= 1
+                    self.observe_mode = False
+                    self.show_observing_message()
+                    self.observed = True
+                else:
+                    if self.vs_cpu_mode:
+                        self.cpu_thinking = True
 
     def handle_scroll(self, scroll_amount):
         self.scroll_pos = max(0, min(self.scroll_pos - scroll_amount, len(self.log) - 1))
@@ -84,6 +95,9 @@ class Game:
 
     def check_winner(self):
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+        black_win = False
+        white_win = False
+
         for x in range(self.board_size):
             for y in range(self.board_size):
                 if self.board[x][y] is not None and self.board[x][y].observed:
@@ -101,7 +115,17 @@ class Game:
                             else:
                                 break
                         if count >= 5:
-                            return stone.player
+                            if stone.color == BLACK:
+                                black_win = True
+                            else:
+                                white_win = True
+
+        if black_win and white_win:
+            return self.observer
+        elif black_win:
+            return "black"
+        elif white_win:
+            return "white"
         return None
 
     def reset_game(self):
@@ -113,6 +137,17 @@ class Game:
         self.log = []
         self.last_move = None
         self.cpu_thinking = False
+        self.observe_counts = {"black": 5, "white": 5}
+        self.observe_mode = False
+        self.observer = None
+
+    def show_observing_message(self):
+        draw_thinking_message(self.screen, self.window_size, self.screen_height, "Observing...")
+        pygame.display.flip()
+        pygame.time.wait(1000)
+        self.observe_board()
+        self.winner = self.check_winner()
+        self.observed = True
 
     def update(self, cpu_mode=False):
         draw_board(self.screen, self.window_size, self.cell_size, self.board_size, self.last_move)
@@ -120,14 +155,14 @@ class Game:
             for y in range(self.board_size):
                 if self.board[x][y] is not None:
                     self.board[x][y].draw(self.screen, self.cell_size)
-        draw_buttons(self.screen, self.window_size, self.screen_height, self.observed, self.winner)
+        draw_buttons(self.screen, self.window_size, self.screen_height, self.observed, self.winner, self.observe_counts, self.observe_mode)
         if self.winner:
             display_winner(self.screen, self.winner, self.window_size)
         draw_log(self.screen, self.log, self.scroll_pos, self.window_size, self.log_width, self.board_size, self.cell_size)
 
         if cpu_mode and self.current_player == ("black" if self.cpu_side == "sente" else "white") and not self.observed and self.winner is None:
             if self.cpu_thinking:
-                draw_thinking_message(self.screen, self.window_size, self.screen_height)
+                draw_thinking_message(self.screen, self.window_size, self.screen_height, "CPU is thinking...")
                 pygame.display.flip()
                 pygame.time.wait(1000)
                 self.cpu_thinking = False
