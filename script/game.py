@@ -23,10 +23,12 @@ class Game:
         self.cpu = CPU(self.board, self.board_size)
         self.last_move = None
         self.cpu_thinking = False
+        self.vs_cpu_mode = False  # モードのフラグを追加
 
-    def set_player(self, player_side):
+    def set_player(self, player_side, vs_cpu):
         self.player_side = player_side
         self.cpu_side = "gote" if player_side == "sente" else "sente"
+        self.vs_cpu_mode = vs_cpu  # モードを設定
         pygame.display.set_mode((self.window_size + self.log_width, self.screen_height))  # ゲーム画面に遷移する際にログ用スペースを確保
 
     def handle_mouse_click(self, x, y):
@@ -40,12 +42,13 @@ class Game:
                 self.observe_board()
                 self.winner = self.check_winner()
                 self.observed = True
-        elif not self.observed and self.winner is None and self.current_player == ("black" if self.player_side == "sente" else "white"):
+        elif not self.observed and self.winner is None and (not self.vs_cpu_mode or self.current_player == ("black" if self.player_side == "sente" else "white")):
             grid_x, grid_y = x // self.cell_size, y // self.cell_size
             print(f"Placing stone at grid ({grid_x}, {grid_y})")  # デバッグ用
             if 0 <= grid_x < self.board_size and 0 <= grid_y < self.board_size and self.board[grid_x][grid_y] is None:
                 self.place_stone(grid_x, grid_y)
-                self.cpu_thinking = True
+                if self.vs_cpu_mode:
+                    self.cpu_thinking = True
 
     def handle_scroll(self, scroll_amount):
         self.scroll_pos = max(0, min(self.scroll_pos - scroll_amount, len(self.log) - 1))

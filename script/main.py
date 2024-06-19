@@ -35,10 +35,10 @@ while running:
             elif player_selection:
                 sente_button, gote_button = draw_player_selection(screen, WINDOW_SIZE, SCREEN_HEIGHT)
                 if sente_button.collidepoint(x, y):
-                    game.set_player("sente")
+                    game.set_player("sente", cpu_mode)
                     game_started = True
                 elif gote_button.collidepoint(x, y):
-                    game.set_player("gote")
+                    game.set_player("gote", cpu_mode)
                     game_started = True
             else:
                 vs_cpu_button, vs_player_button = draw_menu(screen, WINDOW_SIZE, SCREEN_HEIGHT)
